@@ -1,6 +1,6 @@
 import pandas as pd
 from sklearn import linear_model, metrics, svm
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import cross_validate, train_test_split
 from sklearn.naive_bayes import GaussianNB
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -11,7 +11,7 @@ PKIOHD_CLEANED_PATH = 'datasets/cleaned/PKIOHD-Cleaned.xlsx'
 class Model:
 
     @classmethod
-    def separe_dataset(cls, features, label):
+    def split_dataset(cls, features, label):
         train, test, train_labels, test_labels = train_test_split(
             features,
             label,
@@ -25,83 +25,122 @@ class Model:
     def evaluate_model(cls, test, model_predict):
         return metrics.classification_report(test, model_predict)
 
+    @classmethod
+    def create_cross_validation(cls, model, features, label):
+        scores = cross_validate(
+            model,
+            features,
+            label,
+            cv=5,
+            scoring=('accuracy', 'recall', 'f1', 'precision')
+        )
+
+        accuracy = scores.get('test_accuracy').mean()
+        print(f'Acurácia: {accuracy:.2f}')
+
+        recall = scores.get('test_recall').mean()
+        print(f'Recall: {recall:.2f}')
+
+        f1_score = scores.get('test_f1').mean()
+        print(f'F1-Score: {f1_score:.2f}')
+
+        precision = scores.get('test_precision').mean()
+        print(f'Precisão: {precision:.2f}')
 
     @classmethod
     def gaussian_nb(cls, features, label):
-        train, test, train_labels, test_labels = Model.separe_dataset(features, label)
-        
         gnb = GaussianNB()
-        gnb.fit(train, train_labels)
-        predict = gnb.predict(test)
 
-        # Avaliação do modelo
-        metrics = Model.evaluate_model(test_labels, predict)
-        print(f'GaussianNB: \n {metrics}')
+        # Validação cruzada
+        print('Naïve Bayes: ')
+        Model.create_cross_validation(gnb, features, label)
 
+        return gnb
 
     @classmethod
     def support_vector_machine(cls, features, label):
-        train, test, train_labels, test_labels = Model.separe_dataset(features, label)
-
         svm_model = svm.SVC(
             kernel='linear',
             C=1.0,
-        ).fit(train, train_labels)
-        predict = svm_model.predict(test)
+        )
 
-        # Avaliação do modelo
-        metrics = Model.evaluate_model(test_labels, predict)
-        print(f'Support Vector Machines: \n {metrics}')
+        # Validação cruzada
+        print('Support Vector Machine: ')
+        Model.create_cross_validation(svm_model, features, label)
+
+        return svm_model
 
     @classmethod
     def logistic_regression(cls, features, label):
-        train, test, train_labels, test_labels = Model.separe_dataset(features, label)
-
         lr_model = linear_model.LogisticRegression(
             solver='liblinear',
             C=1.0
         )
-        lr_model.fit(train, train_labels)
-        predict = lr_model.predict(test)
 
-        # Avaliação do modelo
-        metrics = Model.evaluate_model(test_labels, predict)
-        print(f'Logistic Regression: \n {metrics}')
+        # Validação cruzada
+        print('Regressão Logística: ')
+        Model.create_cross_validation(lr_model, features, label)
+
+        return lr_model
 
     @classmethod
     def k_nearest_neighbors(cls, features, label):
-        train, test, train_labels, test_labels = Model.separe_dataset(features, label)
-
         knn = KNeighborsClassifier(n_neighbors=2)
-        knn.fit(train, train_labels)
-        predict = knn.predict(test)
 
-        # Avaliação do modelo
-        metrics = Model.evaluate_model(test_labels, predict)
-        print(f'K-Nearest Neighbors: \n {metrics}')
+        # Validação cruzada
+        print('K-Nearest Neighbors: ')
+        Model.create_cross_validation(knn, features, label)
+
+        return knn
 
 if __name__ == '__main__':
     # Personal Indicators of Heart Disease
     pkiohd = pd.read_excel(PKIOHD_CLEANED_PATH)
-    label = pkiohd['HeartDisease']
-    features = pkiohd.drop('HeartDisease', axis=1)
-    print('Personal Indicators of Heart Disease')
-    Model.gaussian_nb(features, label)
-    # Model.support_vector_machine(features, label)
-    print('Personal Indicators of Heart Disease')
-    Model.logistic_regression(features, label)
-    print('Personal Indicators of Heart Disease')
-    Model.k_nearest_neighbors(features, label)
-    
+    label_pkiohd = pkiohd['HeartDisease']
+    features_pkiohd = pkiohd.drop('HeartDisease', axis=1)
+
+    print('--------------------------------------------------')
+    print('Personal Key Indicators of Heart Disease - PKIOHD')
+    Model.gaussian_nb(features_pkiohd, label_pkiohd)
+
+    # print('--------------------------------------------------')
+    # print('Personal Key Indicators of Heart Disease - PKIOHD')
+    # Model.support_vector_machine(features_pkiohd, label_pkiohd)
+
+    print('--------------------------------------------------')
+    print('Personal Key Indicators of Heart Disease - PKIOHD')
+    Model.logistic_regression(features_pkiohd, label_pkiohd)
+
+    print('--------------------------------------------------')
+    print('Personal Key Indicators of Heart Disease - PKIOHD')
+    Model.k_nearest_neighbors(features_pkiohd, label_pkiohd)
+
     # Heart Disease Dataset
     hdd = pd.read_excel(HDD_CLEANED_PATH)
-    label = hdd['target']
-    features = hdd.drop('target', axis=1)
-    print('Heart Disease Dataset')
-    Model.gaussian_nb(features, label)
-    print('Heart Disease Dataset')
-    Model.support_vector_machine(features, label)
-    print('Heart Disease Dataset')
-    Model.logistic_regression(features, label)
-    print('Heart Disease Dataset')
-    Model.k_nearest_neighbors(features, label)
+    label_hdd = hdd['target']
+    features_hdd = hdd.drop('target', axis=1)
+
+    print('-----------------------------')
+    print('Heart Disease Dataset - HDD')
+    Model.gaussian_nb(features_hdd, label_hdd)
+
+    print('-----------------------------')
+    print('Heart Disease Dataset - HDD')
+    Model.support_vector_machine(features_hdd, label_hdd)
+
+    print('-----------------------------')
+    print('Heart Disease Dataset - HDD')
+    Model.logistic_regression(features_hdd, label_hdd)
+
+    print('-----------------------------')
+    print('Heart Disease Dataset - HDD')
+    knn = Model.k_nearest_neighbors(features_hdd, label_hdd)
+
+    # Teste do melhor modelo com conjunto de teste
+    train, test, train_labels, test_labels = Model.split_dataset(features_hdd, label_hdd)
+    knn.fit(train, train_labels)
+    predict = knn.predict(test)
+
+    # Avaliação do modelo
+    metrics = Model.evaluate_model(test_labels, predict)
+    print(f'K-Nearest Neighbors: \n {metrics}')
